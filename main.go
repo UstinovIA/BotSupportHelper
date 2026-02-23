@@ -6,6 +6,8 @@ import (
 )
 
 func main() {
-	pathFile := "D:/Projects/ItoolabsBotSupportHelper/megafon/itp/ИТП пример 2.xlsx"
-	fmt.Println(itp.GenerateITP(pathFile))
+	pathFile := "<путь_к_файлу>"
+	var result1, result2 = itp.GetCmd(pathFile)
+	fmt.Println(result1)
+	fmt.Println(result2)
 }

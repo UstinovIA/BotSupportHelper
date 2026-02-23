@@ -1,15 +1,24 @@
 package itp
 
 import (
+	"strconv"
 	"strings"
 )
 
-func GenerateITP(path string) string {
-	var result strings.Builder
+// Сгенерировать команду для создания конфигурации тарифа. На вход принимается путь к файлу с калькулятором. Возвращает две строки: команда для создания конфигурации ИТП; команда для перевода клиента на ИТП.
+func GetCmd(path string) (string, string) {
+	var cmd1, cmd2 string
 	extensionsConditions := getConditions(path)
 	if len(extensionsConditions) == 0 {
-		return "Проверьте наличие файла по указанному пути!"
+		return "Проверьте наличие файла по указанному пути!", "ERROR!"
 	}
+	cmd1 = generateITP(extensionsConditions)
+	cmd2 = getEnableConfigurationForClient(extensionsConditions)
+	return cmd1, cmd2
+}
+
+func generateITP(extensionsConditions [][]string) string {
+	var result strings.Builder
 	result.WriteString("bossi product create ")
 	result.WriteString(getBasePriceAndCountEmployees(extensionsConditions))
 	result.WriteString(getConditionsExtensions(extensionsConditions))
@@ -87,4 +96,62 @@ func getConditionsExtensionsQuant(extensionsConditions [][]string) string {
 	return result.String()
 }
 
-//func getEnableExtension()
+func getEnableConfigurationForClient(extensionsConditions [][]string) string {
+	var result strings.Builder
+	result.WriteString("bossi domain change-product <domain> <ID_tariff> ")
+	result.WriteString(strconv.Itoa(getCountEmployees(extensionsConditions)))
+	result.WriteString(getEnableExtensions(extensionsConditions))
+	result.WriteString(getEnableExtensionsQuant(extensionsConditions))
+	return result.String()
+}
+
+func getCountEmployees(extensionsConditions [][]string) int {
+	var result = 0
+	employee := getEmployees()
+	for i := 0; i < len(employee); i++ {
+		for j := 0; j < len(extensionsConditions); j++ {
+			if employee[i] == extensionsConditions[j][0] {
+				count, _ := strconv.Atoi(extensionsConditions[i][1])
+				result = result + count
+				break
+			}
+		}
+	}
+	return result
+}
+
+func getEnableExtensions(extensionsConditions [][]string) string {
+	var result strings.Builder
+	listExtensions := getListExtensions()
+	for i := 0; i < len(listExtensions); i++ {
+		for j := 0; j < len(extensionsConditions); j++ {
+			if listExtensions[i][0] == extensionsConditions[j][0] { //находим соответствие по таблице
+				if strings.Contains(extensionsConditions[j][1], "1") {
+					result.WriteString(" ")
+					result.WriteString("--")
+					result.WriteString(listExtensions[i][1])
+				}
+			}
+		}
+	}
+	return result.String()
+}
+
+func getEnableExtensionsQuant(extensionsConditions [][]string) string {
+	var result strings.Builder
+	listExtensions := getListExtensionsQuant()
+	for i := 0; i < len(listExtensions); i++ {
+		for j := 0; j < len(extensionsConditions); j++ {
+			if listExtensions[i][0] == extensionsConditions[j][0] { //находим соответствие по таблице
+				if strings.Contains(extensionsConditions[j][1], "1") {
+					result.WriteString(" ")
+					result.WriteString("--")
+					result.WriteString(listExtensions[i][1])
+					result.WriteString("=")
+					result.WriteString(extensionsConditions[j][1])
+				}
+			}
+		}
+	}
+	return result.String()
+}
