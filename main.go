@@ -10,7 +10,7 @@ func main() {
 	   	var result1, result2 = itp.GetCmd(pathFile)
 	   	fmt.Println(result1)
 	   	fmt.Println(result2) */
-	pathFile := "C:/Users/ustin/Downloads/Шаблон для создания промокода.xlsx"
+	pathFile := "<путь_к_файлу>"
 	listPromo := promo.GetCmd(pathFile)
 	for i := 0; i < len(listPromo); i++ {
 		fmt.Println(listPromo[i])
