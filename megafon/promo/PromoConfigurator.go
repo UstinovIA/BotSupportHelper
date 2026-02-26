@@ -16,7 +16,8 @@ func GetCmd(path string) []string {
 		return []string{"Файл не найден!"}
 	}
 	for i := 1; i < len(table); i++ {
-		if strings.Contains(table[i][0], "демо") || strings.Contains(table[i][1], "демо") {
+		if strings.Contains(table[i][0], "демо") || strings.Contains(table[i][1], "демо") ||
+			strings.Contains(table[i][0], "тестов") || strings.Contains(table[i][1], "тестов") {
 			listCmd = append(listCmd, generatePromoForDemo(table[i]))
 		} else if strings.Contains(table[i][0], "опци") || strings.Contains(table[i][1], "опци") {
 			listCmd = append(listCmd, generatePromoForExtension(table[i]))
@@ -37,7 +38,7 @@ func generatePromoForDemo(row []string) string {
 	result.WriteString(fmt.Sprintf("promo_%s_demo_%sd ", dateStr, countDay))
 	formatedNameCompany := strings.ReplaceAll(row[0], "«", `\"`)
 	formatedNameCompany = strings.ReplaceAll(formatedNameCompany, "»", `\"`)
-	result.WriteString(formatedNameCompany)
+	result.WriteString(fmt.Sprintf(`"%s"`, formatedNameCompany))
 	result.WriteString(fmt.Sprintf(" %s ", normalizeDate(row[2])))
 	result.WriteString(fmt.Sprintf("%s ", row[3]))
 	result.WriteString("prolongation ")
@@ -84,6 +85,9 @@ func getTarget(row string) string {
 	if strings.Contains(row, "новых") {
 		result = result + "demo,"
 	}
+	if strings.Contains(row, "демо") {
+		result = result + "demo,"
+	}
 	result = strings.TrimSuffix(result, ",")
 	return result
 }
@@ -117,7 +121,8 @@ func generatePromoForExtension(row []string) string {
 	for i := 0; i < len(currentExtensionsQuant); i++ {
 		idCompany = idCompany + currentExtensionsQuant[i][0] + "_"
 	}
-	idCompany = strings.TrimSuffix(idCompany, "_")
+	period := getPeriodLenghtForExtensions(row[0], row[1])
+	idCompany = idCompany + period + "m"
 	result.WriteString(idCompany)
 	result.WriteString(" ")
 	formatedNameCompany := strings.ReplaceAll(row[0], "«", `\"`)
@@ -126,7 +131,7 @@ func generatePromoForExtension(row []string) string {
 	result.WriteString(fmt.Sprintf(" %s ", normalizeDate(row[2])))
 	result.WriteString(fmt.Sprintf("%s ", row[3]))
 	result.WriteString("services ")
-	result.WriteString(getPeriodLenghtForExtensions(row[0], row[1]))
+	result.WriteString(period)
 	result.WriteString(" ")
 	if row[4] != "" {
 		result.WriteString(fmt.Sprintf("%s ", row[4]))
@@ -147,36 +152,29 @@ func generatePromoForExtension(row []string) string {
 
 // функция для анализа списка опций
 func getListExtensionsPromo(nameCompany string, descriptionCompany string) ([]string, [][]string) {
-	var currentExtensions []string
-	re := regexp.MustCompile(`"(.*?)"|«(.*?)»`)
-	matches := re.FindAllStringSubmatch(nameCompany, -1)
-	if matches == nil {
-		matches = re.FindAllStringSubmatch(descriptionCompany, -1)
-	}
-	for _, m := range matches {
-		if m[1] != "" {
-			currentExtensions = append(currentExtensions, m[1])
-		} else if m[2] != "" {
-			currentExtensions = append(currentExtensions, m[2])
+	listExtensions := getListExtensions()
+	listExtensionsQuant := getListExtensionsQuant()
+	var resultExtensions []string
+	var resultExtensionsQuant [][]string
+	for i := 0; i < len(listExtensions); i++ {
+		if strings.Contains(strings.ToLower(nameCompany), listExtensions[i][0]) {
+			resultExtensions = append(resultExtensions, listExtensions[i][1])
 		}
 	}
-	listExtensions := getListExtensions()
-	var resultExtensions []string
-	for i := 0; i < len(currentExtensions); i++ {
-		for j := 0; j < len(listExtensions); j++ {
-			if currentExtensions[i] == listExtensions[j][0] {
-				resultExtensions = append(resultExtensions, listExtensions[j][1])
-				break
+	for i := 0; i < len(listExtensionsQuant); i++ {
+		if strings.Contains(strings.ToLower(nameCompany), listExtensionsQuant[i][0]) {
+			resultExtensionsQuant = append(resultExtensionsQuant, []string{listExtensionsQuant[i][1], listExtensionsQuant[i][2]})
+		}
+	}
+	if resultExtensions == nil && resultExtensionsQuant == nil {
+		for i := 0; i < len(listExtensions); i++ {
+			if strings.Contains(strings.ToLower(descriptionCompany), listExtensions[i][0]) {
+				resultExtensions = append(resultExtensions, listExtensions[i][1])
 			}
 		}
-	}
-	listExtensionsQuant := getListExtensionsQuant()
-	var resultExtensionsQuant [][]string
-	for i := 0; i < len(currentExtensions); i++ {
-		for j := 0; j < len(listExtensionsQuant); j++ {
-			if currentExtensions[i] == listExtensionsQuant[j][0] {
-				resultExtensionsQuant = append(resultExtensionsQuant, []string{listExtensionsQuant[j][1], listExtensionsQuant[j][2]})
-				break
+		for i := 0; i < len(listExtensionsQuant); i++ {
+			if strings.Contains(strings.ToLower(descriptionCompany), listExtensionsQuant[i][0]) {
+				resultExtensionsQuant = append(resultExtensionsQuant, []string{listExtensionsQuant[i][1], listExtensionsQuant[i][2]})
 			}
 		}
 	}
